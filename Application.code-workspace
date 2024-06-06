@@ -1,0 +1,39 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../FDC1004"
+		},
+		{
+			"path": "../max31865"
+		},
+		{
+			"path": "../W5500"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"*.tcc": "cpp",
+			"mstd_atomic": "cpp",
+			"mstd_iterator": "cpp",
+			"array": "cpp",
+			"string": "cpp",
+			"string_view": "cpp",
+			"optional": "cpp",
+			"istream": "cpp",
+			"ostream": "cpp",
+			"ratio": "cpp",
+			"system_error": "cpp",
+			"functional": "cpp",
+			"tuple": "cpp",
+			"type_traits": "cpp",
+			"utility": "cpp",
+			"cmath": "cpp",
+			"condition_variable": "cpp",
+			"future": "cpp",
+			"fstream": "cpp"
+		}
+	}
+}
