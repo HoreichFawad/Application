@@ -1,22 +1,3 @@
-/* example.cpp
- *
- * Copyright (C) 20017-2021 Fanzhe Lyu <lvfanzhe@hotmail.com>, all rights reserved.
- *
- * modbuspp is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
-// #include "modbusExample.hpp"
 #include "w5500example.hpp"
 #include "w5500_header.hpp"
 #include "testw5500.hpp"
@@ -25,10 +6,6 @@
 #include "EthernetInterface.h"
 #include "modbusExample.hpp"
 
-// using SOCKADDR = struct sockaddr;
-// using SOCKADDR_IN = struct sockaddr_in;
-// X_SOCKET _socket{};
-// SOCKADDR_IN _server{};
 SPI spi(PB_15, PB_14, PB_13); // mosi, miso, sclk
 EthernetInterface net(&spi, PB_12, PA_10);
 
@@ -97,12 +74,12 @@ bool ModbusTCPClient::socketConfiguration()
     return true;
 }
 
-void ModbusTCPClient::modbus_set_slave_id(int id)
+void ModbusTCPClient::modbusSetSlaveId(int id)
 {
      _slaveid=id;
 }
 
-void ModbusTCPClient::modbus_build_request(uint8_t *to_send, uint16_t address, int func) const
+void ModbusTCPClient::modbusBuildRequest(uint8_t *to_send, uint16_t address, int func) const
 {
     to_send[0] = (uint8_t)(_msg_id>>8u);
     to_send[1] = (uint8_t)(_msg_id & 0x00FFu);
@@ -115,7 +92,7 @@ void ModbusTCPClient::modbus_build_request(uint8_t *to_send, uint16_t address, i
     to_send[9] = (uint8_t)(address & 0x00FFu);
 }
 
-ssize_t ModbusTCPClient::modbus_send(uint8_t *to_send, size_t length)
+ssize_t ModbusTCPClient::modbusSend(uint8_t *to_send, size_t length)
 {
     _msg_id++;
     uint16_t ptr = net.sreg<uint16_t>(0, Sn_TX_WR);
@@ -149,24 +126,24 @@ ssize_t ModbusTCPClient::modbus_send(uint8_t *to_send, size_t length)
     return W5500::INT_SEND_OK;
 }
 
-int ModbusTCPClient::modbus_write(uint16_t address, uint16_t amount, int func, const uint16_t *value)
+int ModbusTCPClient::modbusWrite(uint16_t address, uint16_t amount, int func, const uint16_t *value)
 {
     int status = 0;
     uint8_t *to_send;
     if (func == WRITE_COIL || func == WRITE_REG)
     {
         to_send = new uint8_t[12];
-        modbus_build_request(to_send, address, func);
+        modbusBuildRequest(to_send, address, func);
         to_send[5] = 6;
         to_send[10] = (uint8_t)(value[0] >> 8u);
         to_send[11] = (uint8_t)(value[0] & 0x00FFu);
         // printf("sending\n");
-        status = modbus_send(to_send, 12);
+        status = modbusSend(to_send, 12);
     }
     else if (func == WRITE_REGS)
     {
         to_send = new uint8_t[13 + 2 * amount];
-        modbus_build_request(to_send, address, func);
+        modbusBuildRequest(to_send, address, func);
         to_send[5] = (uint8_t)(7 + 2 * amount);
         to_send[10] = (uint8_t)(amount >> 8u);
         to_send[11] = (uint8_t)(amount & 0x00FFu);
@@ -176,12 +153,12 @@ int ModbusTCPClient::modbus_write(uint16_t address, uint16_t amount, int func, c
             to_send[13 + 2 * i] = (uint8_t)(value[i] >> 8u);
             to_send[14 + 2 * i] = (uint8_t)(value[i] & 0x00FFu);
         }
-        status = modbus_send(to_send, 13 + 2 * amount);
+        status = modbusSend(to_send, 13 + 2 * amount);
     }
     else if (func == WRITE_COILS)
     {
         to_send = new uint8_t[14 + (amount - 1) / 8];
-        modbus_build_request(to_send, address, func);
+        modbusBuildRequest(to_send, address, func);
         to_send[5] = (uint8_t)(7 + (amount + 7) / 8);
         to_send[10] = (uint8_t)(amount >> 8u);
         to_send[11] = (uint8_t)(amount & 0x00FFu);
@@ -192,13 +169,13 @@ int ModbusTCPClient::modbus_write(uint16_t address, uint16_t amount, int func, c
         {
             to_send[13 + i / 8] += (uint8_t)(value[i] << (i % 8u));
         }
-        status = modbus_send(to_send, 14 + (amount - 1) / 8);
+        status = modbusSend(to_send, 14 + (amount - 1) / 8);
     }
     delete[] to_send;
     return status;
 }
 
-ssize_t ModbusTCPClient::modbus_receive(uint8_t* buf) const
+ssize_t ModbusTCPClient::modbusReceive(uint8_t* buf) const
 {
     uint8_t buffer=0;
     do{
@@ -224,7 +201,7 @@ ssize_t ModbusTCPClient::modbus_receive(uint8_t* buf) const
     return *buf;
 }
 
-void ModbusTCPClient::modbuserror_handle(const uint8_t *msg, int func)
+void ModbusTCPClient::modbusErrorHandle(const uint8_t *msg, int func)
 {
     err = false;
     error_msg = "NO ERR";
@@ -270,47 +247,47 @@ void ModbusTCPClient::modbuserror_handle(const uint8_t *msg, int func)
     }
 }
 
-void ModbusTCPClient::set_bad_con()
+void ModbusTCPClient::setBadCon()
 {
     err = true;
     error_msg = "BAD CONNECTION";
 }
 
-void ModbusTCPClient::set_bad_input()
+void ModbusTCPClient::setBadInput()
 {
     err = true;
     error_msg = "BAD FUNCTION INPUT";
 }
 
-int ModbusTCPClient::modbus_read(uint16_t address, uint16_t amount, int func)
+int ModbusTCPClient::modbusRead(uint16_t address, uint16_t amount, int func)
 {
     uint8_t to_send[12];
-    modbus_build_request(to_send, address, func);
+    modbusBuildRequest(to_send, address, func);
     to_send[5] = 6;
     to_send[10] = (uint8_t)(amount >> 8u);
     to_send[11] = (uint8_t)(amount & 0x00FFu);
-    return modbus_send(to_send, 12);
+    return modbusSend(to_send, 12);
 }
 
 
-int ModbusTCPClient::modbus_read_coils(uint16_t address, uint16_t amount, bool *buffer)
+int ModbusTCPClient::modbusReadCoils(uint16_t address, uint16_t amount, bool *buffer)
 {
     if (_connected)
     {
         if (amount > 2040)
         {
-            set_bad_input();
+            setBadInput();
             return EX_BAD_DATA;
         }
-        modbus_read(address, amount, READ_COILS);
+        modbusRead(address, amount, READ_COILS);
         uint8_t to_rec[MAX_MSG_LENGTH];
-        ssize_t k = modbus_receive(to_rec);
+        ssize_t k = modbusReceive(to_rec);
         if (k == -1)
         {
-            set_bad_con();
+            setBadCon();
             return BAD_CON;
         }
-        modbuserror_handle(to_rec, READ_COILS);
+        modbusErrorHandle(to_rec, READ_COILS);
         if (err)
             return err_no;
         for (auto i = 0; i < amount; i++)
@@ -321,26 +298,26 @@ int ModbusTCPClient::modbus_read_coils(uint16_t address, uint16_t amount, bool *
     }
     else
     {
-        set_bad_con();
+        setBadCon();
         return BAD_CON;
     }
 }
 
-int ModbusTCPClient::modbus_read_input_bits(uint16_t address, uint16_t amount, bool *buffer)
+int ModbusTCPClient::modbusReadInputBits(uint16_t address, uint16_t amount, bool *buffer)
 {
     if (_connected)
     {
         if (amount > 2040)
         {
-            set_bad_input();
+            setBadInput();
             return EX_BAD_DATA;
         }
-        modbus_read(address, amount, READ_INPUT_BITS);
+        modbusRead(address, amount, READ_INPUT_BITS);
         uint8_t to_rec[MAX_MSG_LENGTH];
-        ssize_t k = modbus_receive(to_rec);
+        ssize_t k = modbusReceive(to_rec);
         if (k == -1)
         {
-            set_bad_con();
+            setBadCon();
             return BAD_CON;
         }
         if (err)
@@ -349,7 +326,7 @@ int ModbusTCPClient::modbus_read_input_bits(uint16_t address, uint16_t amount, b
         {
             buffer[i] = (bool)((to_rec[9u + i / 8u] >> (i % 8u)) & 1u);
         }
-        modbuserror_handle(to_rec, READ_INPUT_BITS);
+        modbusErrorHandle(to_rec, READ_INPUT_BITS);
         return 0;
     }
     else
@@ -358,19 +335,19 @@ int ModbusTCPClient::modbus_read_input_bits(uint16_t address, uint16_t amount, b
     }
 }
 
-int ModbusTCPClient::modbus_read_holding_registers(uint16_t address, uint16_t amount, uint16_t *buffer)
+int ModbusTCPClient::modbusReadHoldingRegisters(uint16_t address, uint16_t amount, uint16_t *buffer)
 {
     if (_connected)
     {
-        modbus_read(address, amount, READ_REGS);
+        modbusRead(address, amount, READ_REGS);
         uint8_t to_rec[MAX_MSG_LENGTH];
-        ssize_t k = modbus_receive(to_rec);
+        ssize_t k = modbusReceive(to_rec);
         if (k == -1)
         {
-            set_bad_con();
+            setBadCon();
             return BAD_CON;
         }
-        modbuserror_handle(to_rec, READ_REGS);
+        modbusErrorHandle(to_rec, READ_REGS);
         if (err)
             return err_no;
         for (auto i = 0; i < amount; i++)
@@ -382,24 +359,24 @@ int ModbusTCPClient::modbus_read_holding_registers(uint16_t address, uint16_t am
     }
     else
     {
-        set_bad_con();
+        setBadCon();
         return BAD_CON;
     }
 }
 
-int ModbusTCPClient::modbus_read_input_registers(uint16_t address, uint16_t amount, uint16_t *buffer)
+int ModbusTCPClient::modbusReadInputRegisters(uint16_t address, uint16_t amount, uint16_t *buffer)
 {
     if (_connected)
     {
-        modbus_read(address, amount, READ_INPUT_REGS);
+        modbusRead(address, amount, READ_INPUT_REGS);
         uint8_t to_rec[MAX_MSG_LENGTH];
-        ssize_t k = modbus_receive(to_rec);
+        ssize_t k = modbusReceive(to_rec);
         if (k == -1)
         {
-            set_bad_con();
+            setBadCon();
             return BAD_CON;
         }
-        modbuserror_handle(to_rec, READ_INPUT_REGS);
+        modbusErrorHandle(to_rec, READ_INPUT_REGS);
         if (err)
             return err_no;
         for (auto i = 0; i < amount; i++)
@@ -411,37 +388,37 @@ int ModbusTCPClient::modbus_read_input_registers(uint16_t address, uint16_t amou
     }
     else
     {
-        set_bad_con();
+        setBadCon();
         return BAD_CON;
     }
 }
 
-int ModbusTCPClient::modbus_write_coil(uint16_t address, const bool &to_write)
+int ModbusTCPClient::modbusWriteCoil(uint16_t address, const bool &to_write)
 {
     if (_connected)
     {
         int value = to_write * 0xFF00;
-        modbus_write(address, 1, WRITE_COIL, (uint16_t *)&value);
+        modbusWrite(address, 1, WRITE_COIL, (uint16_t *)&value);
         uint8_t to_rec[MAX_MSG_LENGTH];
-        ssize_t k = modbus_receive(to_rec);
+        ssize_t k = modbusReceive(to_rec);
         if (k == -1)
         {
-            set_bad_con();
+            setBadCon();
             return BAD_CON;
         }
-        modbuserror_handle(to_rec, WRITE_COIL);
+        modbusErrorHandle(to_rec, WRITE_COIL);
         if (err)
             return err_no;
         return 0;
     }
     else
     {
-        set_bad_con();
+        setBadCon();
         return BAD_CON;
     }
 }
 
-int ModbusTCPClient::modbus_write_coils(uint16_t address, uint16_t amount, const bool *value)
+int ModbusTCPClient::modbusWriteCoils(uint16_t address, uint16_t amount, const bool *value)
 {
     if (_connected)
     {
@@ -450,72 +427,72 @@ int ModbusTCPClient::modbus_write_coils(uint16_t address, uint16_t amount, const
         {
             temp[i] = (uint16_t)value[i];
         }
-        modbus_write(address, amount, WRITE_COILS, temp);
+        modbusWrite(address, amount, WRITE_COILS, temp);
         delete[] temp;
         uint8_t to_rec[MAX_MSG_LENGTH];
-        ssize_t k = modbus_receive(to_rec);
+        ssize_t k = modbusReceive(to_rec);
         if (k == -1)
         {
-            set_bad_con();
+            setBadCon();
             return BAD_CON;
         }
-        modbuserror_handle(to_rec, WRITE_COILS);
+        modbusErrorHandle(to_rec, WRITE_COILS);
         if (err)
             return err_no;
         return 0;
     }
     else
     {
-        set_bad_con();
+        setBadCon();
         return BAD_CON;
     }
 }
 
-int ModbusTCPClient::modbus_write_registers(uint16_t address, uint16_t amount, const uint16_t *value)
+int ModbusTCPClient::modbusWriteRegisters(uint16_t address, uint16_t amount, const uint16_t *value)
 {
     if (_connected)
     {
-        modbus_write(address, amount, WRITE_REGS, value);
+        modbusWrite(address, amount, WRITE_REGS, value);
         uint8_t to_rec[MAX_MSG_LENGTH];
-        ssize_t k = modbus_receive(to_rec);
+        ssize_t k = modbusReceive(to_rec);
         if (k == -1)
         {
-            set_bad_con();
+            setBadCon();
             return BAD_CON;
         }
-        modbuserror_handle(to_rec, WRITE_REGS);
+        modbusErrorHandle(to_rec, WRITE_REGS);
         if (err)
             return err_no;
         return 0;
     }
     else
     {
-        set_bad_con();
+        setBadCon();
         return BAD_CON;
     }
 }
 
 
-int ModbusTCPClient::modbus_write_register(uint16_t address, const uint16_t &value)
+int ModbusTCPClient::modbusWriteRegister(uint16_t address, const uint16_t &value)
 {
     if (_connected)
     {
-        modbus_write(address, 1, WRITE_REG, &value);
+        modbusWrite(address, 1, WRITE_REG, &value);
         uint8_t to_rec[MAX_MSG_LENGTH];
-        ssize_t k = modbus_receive(to_rec);
+        ssize_t k = modbusReceive(to_rec);
         if (k == -1)
         {
-            set_bad_con();
+            setBadCon();
             return BAD_CON;
         }
-        modbuserror_handle(to_rec, WRITE_COIL);
+        modbusErrorHandle(to_rec, WRITE_COIL);
         if (err)
             return err_no;
         return 0;
     }
     else
     {
-        set_bad_con();
+        setBadCon();
         return BAD_CON;
     }
 }
@@ -528,37 +505,37 @@ int modbusExample()
     uint8_t MAC_Addrc[6] = {0x00,0x08,0xDC,0x12,0x34,0x56};
     ModbusTCPClient modbus("192.168.13.164","255.255.255.0","192.168.11.1","192.168.13.165",&MAC_Addrc[0]);
     modbus.socketConfiguration();
-    modbus.modbus_set_slave_id(11);
+    modbus.modbusSetSlaveId(11);
 
     // // read coil                        function 0x01
     // bool read_coil;
-    // modbus.modbus_read_coils(1, 1, &read_coil);
+    // modbus.modbusReadCoils(1, 1, &read_coil);
 
     // // read input bits(discrete input)  function 0x02
     // bool read_bits;
-    // modbus.modbus_read_input_bits(3, 1, &read_bits);
+    // modbus.modbusReadInputBits(3, 1, &read_bits);
 
     // // read holding registers           function 0x03
     // uint16_t read_holding_regs[1];
-    // modbus.modbus_read_holding_registers(0, 1, read_holding_regs);
+    // modbus.modbusReadHoldingRegisters(0, 1, read_holding_regs);
 
     // // read input registers             function 0x04
     // uint16_t read_input_regs[1];
-    // modbus.modbus_read_input_registers(0, 1, read_input_regs);
+    // modbus.modbusReadInputRegisters(0, 1, read_input_regs);
 
     // // write single coil                function 0x05
-    // modbus.modbus_write_coil(0, true);
+    // modbus.modbusWriteCoil(0, true);
 
     // // write single reg                 function 0x06
-    modbus.modbus_write_register(0, 123);
+    modbus.modbusWriteRegister(0, 123);
 
     // // write multiple coils             function 0x0F
     // bool write_cols[4] = {false, true, false, true};
-    // modbus.modbus_write_coils(0, 4, write_cols);
+    // modbus.modbusWriteCoils(0, 4, write_cols);
 
     // // write multiple regs              function 0x10
     // uint16_t write_regs[4] = {21, 22, 23,24};
-    // modbus.modbus_write_registers(4, 4, write_regs);
+    // modbus.modbusWriteRegisters(4, 4, write_regs);
 
     // // close connection and free the memory
     // net.close(0);

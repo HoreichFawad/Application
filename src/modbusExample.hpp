@@ -3,24 +3,6 @@
 #include <string>
 #include "mbed.h"
 #include "EthernetInterface.h"
-#include "PinNames.h"
-
-#ifdef ENABLE_MODBUSPP_LOGGING
-#include <cstdio>
-#define LOG(fmt, ...) printf("[ modbuspp ]" fmt, ##__VA_ARGS__)
-#else
-#define LOG(...) (void)0
-#endif
-
-using X_SOCKET = int;
-
-#define X_ISVALIDSOCKET(s) ((s) >= 0)
-#define X_CLOSE_SOCKET(s) close(s)
-#define X_ISCONNECTSUCCEED(s) ((s) >= 0)
-using ssize_t=int;
-
-using SOCKADDR = struct sockaddr;
-using SOCKADDR_IN = struct sockaddr_in;
 
 #define MAX_MSG_LENGTH 260
 
@@ -59,22 +41,17 @@ class ModbusTCPClient
         ModbusTCPClient(const char* IP_Addrc, const char* IP_Subnetc, const char* IP_Gatewayc, const char* DIP_Addr,uint8_t* MAC_Addrc);
         ~ModbusTCPClient();
 
-        bool modbus_connect();
-        void modbus_close() const;
+        void modbusSetSlaveId(int id);
 
-        bool is_connected() const { return _connected; }
+        int modbusReadCoils(uint16_t address, uint16_t amount, bool *buffer);
+        int modbusReadInputBits(uint16_t address, uint16_t amount, bool *buffer);
+        int modbusReadHoldingRegisters(uint16_t address, uint16_t amount, uint16_t *buffer);
+        int modbusReadInputRegisters(uint16_t address, uint16_t amount, uint16_t *buffer);
 
-        void modbus_set_slave_id(int id);
-
-        int modbus_read_coils(uint16_t address, uint16_t amount, bool *buffer);
-        int modbus_read_input_bits(uint16_t address, uint16_t amount, bool *buffer);
-        int modbus_read_holding_registers(uint16_t address, uint16_t amount, uint16_t *buffer);
-        int modbus_read_input_registers(uint16_t address, uint16_t amount, uint16_t *buffer);
-
-        int modbus_write_coil(uint16_t address, const bool &to_write);
-        int modbus_write_register(uint16_t address, const uint16_t &value);
-        int modbus_write_coils(uint16_t address, uint16_t amount, const bool *value);
-        int modbus_write_registers(uint16_t address, uint16_t amount, const uint16_t *value);
+        int modbusWriteCoil(uint16_t address, const bool &to_write);
+        int modbusWriteRegister(uint16_t address, const uint16_t &value);
+        int modbusWriteCoils(uint16_t address, uint16_t amount, const bool *value);
+        int modbusWriteRegisters(uint16_t address, uint16_t amount, const uint16_t *value);
         bool socketConfiguration();
         bool setConfigurations(const char* IP_Addrc, const char* IP_Subnetc, const char* IP_Gatewayc, const char* DIP_Addr);
         bool init();
@@ -85,18 +62,18 @@ class ModbusTCPClient
         int _slaveid{};
         std::string HOST;
 
-        void modbus_build_request(uint8_t *to_send, uint16_t address, int func) const;
-    
-        int modbus_read(uint16_t address, uint16_t amount, int func);
-        int modbus_write(uint16_t address, uint16_t amount, int func, const uint16_t *value);
-    
-        ssize_t modbus_send(uint8_t *to_send, size_t length);
-        ssize_t modbus_receive(uint8_t *buffer) const;
-    
-        void modbuserror_handle(const uint8_t *msg, int func);
-    
-        void set_bad_con();
-        void set_bad_input();
+        void modbusBuildRequest(uint8_t *to_send, uint16_t address, int func) const;
+
+        int modbusRead(uint16_t address, uint16_t amount, int func);
+        int modbusWrite(uint16_t address, uint16_t amount, int func, const uint16_t *value);
+
+        ssize_t modbusSend(uint8_t *to_send, size_t length);
+        ssize_t modbusReceive(uint8_t *buffer) const;
+
+        void modbusErrorHandle(const uint8_t *msg, int func);
+
+        void setBadCon();
+        void setBadInput();
     };
     int modbusExample();
     uint32_t strToIP_(const char *str);
